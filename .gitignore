@@ -2,7 +2,12 @@
 __pycache__/
 *.py[codz]
 *$py.class
+# Environment variables (MongoDB connection strings)
+.env
 
+# Old JSON data files (if migrating from JSON)
+finance_data.json
+finance_data.json.backup
 # C extensions
 *.so
 
