@@ -206,10 +206,18 @@ This application uses **MongoDB** for secure, scalable data storage with the fol
 - **Set realistic savings goals**: Start with 10-20% and adjust as needed
 - **Build an emergency fund**: Aim for 3-6 months of expenses in emergency savings
 
+## Contributions
+
+Suggestions and improvements are welcome! Financial programs can get quite complex, and a new point of view on calculations, features, or workflows is invaluable to improve the program as a whole. Feel free to open an issue or submit a pull request with your ideas.
+
 ## License
 
-See LICENSE file for details.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). For more details and information, check the LICENSE file.
 
-## Author
+## Developers
+
+- **Mano Tilts** - Creator and Lead Developer
+
+## Motivation
 
 Created for personal finance management and tracking.
