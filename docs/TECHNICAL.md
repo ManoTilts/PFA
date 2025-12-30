@@ -5,19 +5,24 @@
 ### Application Structure
 ```
 PFA/
-├── main.py                  # Main application and menu system
-├── data_manager.py          # MongoDB data layer
-├── income.py                # Income tracking module
-├── expenses.py              # Expense tracking module
-├── investments.py           # Investment portfolio module
-├── dashboard.py             # Financial dashboard and analytics
+├── src/                     # Source code
+│   ├── main.py              # Main application and menu system
+│   ├── data_manager.py      # MongoDB data layer
+│   ├── income.py            # Income tracking module
+│   ├── expenses.py          # Expense tracking module
+│   ├── investments.py       # Investment portfolio module
+│   ├── dashboard.py         # Financial dashboard and analytics
+│   ├── debt_manager.py      # Debt tracking module
+│   └── goals_manager.py     # Goals management module
+├── docs/                    # Documentation
+│   ├── QUICKSTART.md        # Step-by-step setup guide
+│   └── TECHNICAL.md         # Technical documentation
+├── config/                  # Configuration
+│   └── .env.example         # Environment configuration example
 ├── requirements.txt         # Python dependencies
 ├── README.md                # Main documentation
-├── QUICKSTART.md            # Quick start guide
-├── .env.example             # Environment configuration example
-├── .gitignore               # Git ignore rules
-├── setup.bat                # Windows setup script
-└── run.bat                  # Windows run script
+├── LICENSE                  # GPL-3.0 License
+└── .gitignore               # Git ignore rules
 ```
 
 ## Technology Stack
@@ -378,7 +383,11 @@ To contribute to this project:
 
 ## License
 
-See LICENSE file for details.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). For more details and information, check the LICENSE file.
+
+## Developers
+
+- **Mano Tilts** - Creator and Lead Developer
 
 ## Support
 

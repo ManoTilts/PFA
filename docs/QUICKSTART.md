@@ -24,7 +24,7 @@ pip install -r requirements.txt
 ### Step 3: Run the Application
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 ## First Use Walkthrough

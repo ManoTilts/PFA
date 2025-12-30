@@ -150,9 +150,9 @@ This application uses **MongoDB** for secure, scalable data storage with the fol
   - `expenses.py` - Expense tracking module
   - `investments.py` - Investment portfolio module
   - `dashboard.py` - Financial dashboard
-- `docs/` - Documentation files
-  - `QUICKSTART.md` - Detailed beginner's guide
-  - `TECHNICAL.md` - Technical details
+- `docs/` - Comprehensive documentation to help understand the program for future development
+  - `QUICKSTART.md` - Step-by-step setup and usage guide for new users
+  - `TECHNICAL.md` - Architecture, database schema, and implementation details
 - `config/` - Configuration templates
   - `.env.example` - MongoDB connection template
 - `requirements.txt` - Python dependencies
