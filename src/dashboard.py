@@ -30,31 +30,49 @@ class Dashboard:
             entry['amount'] for entry in all_income
             if entry['date'].startswith(current_month)
         )
+        # Separate regular expenses from investment deposits
         month_expenses = sum(
             entry['amount'] for entry in all_expenses
-            if entry['date'].startswith(current_month)
+            if entry['date'].startswith(current_month) and entry['category'].lower() != 'investment'
+        )
+        month_investments = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['date'].startswith(current_month) and entry['category'].lower() == 'investment'
         )
         
         # Total data
         total_income = sum(entry['amount'] for entry in all_income)
-        total_expenses = sum(entry['amount'] for entry in all_expenses)
+        total_expenses = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['category'].lower() != 'investment'
+        )
+        total_investments = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['category'].lower() == 'investment'
+        )
         total_invested = sum(inv['amount'] for inv in all_investments)
         total_investment_value = sum(
             inv.get('current_value', inv['amount']) for inv in all_investments
         )
         
-        # Calculations
-        month_net = month_income - month_expenses
-        month_savings_rate = (month_net / month_income * 100) if month_income > 0 else 0
-        total_net = total_income - total_expenses
+        # Calculations - Investments count as savings!
+        month_net_cash = month_income - month_expenses - month_investments  # Cash left after expenses AND investments
+        month_total_saved = month_net_cash + month_investments  # Total saved = cash kept + money invested
+        month_savings_rate = (month_total_saved / month_income * 100) if month_income > 0 else 0
+        
+        total_net_cash = total_income - total_expenses - total_investments
+        total_saved = total_net_cash + total_investments
         
         # Display Current Month Summary
         print(f"\n{current_month_name}")
         print("-" * 60)
-        print(f"Income:          {currency}{month_income:>15,.2f}")
-        print(f"Expenses:        {currency}{month_expenses:>15,.2f}")
-        print(f"Net:             {currency}{month_net:>15,.2f}")
-        print(f"Savings Rate:    {month_savings_rate:>15.1f}%")
+        print(f"Income:              {currency}{month_income:>15,.2f}")
+        print(f"Expenses:            {currency}{month_expenses:>15,.2f}")
+        print("-" * 60)
+        print(f"Total Saved:         {currency}{month_total_saved:>15,.2f}")
+        print(f"  • Invested:        {currency}{month_investments:>15,.2f}")
+        print(f"  • Cash Remaining:  {currency}{month_net_cash:>15,.2f}")
+        print(f"Savings Rate:        {month_savings_rate:>15.1f}%")
         
         # Savings Goal Check
         print("\n" + "-" * 60)
@@ -65,16 +83,16 @@ class Dashboard:
         
         if month_income > 0:
             target_savings = month_income * (savings_goal / 100)
-            actual_savings = month_net
+            actual_savings = month_total_saved  # Includes investments!
             difference = actual_savings - target_savings
             
             print(f"Target Savings: {currency}{target_savings:,.2f}")
             print(f"Actual Savings: {currency}{actual_savings:,.2f}")
             
             if month_savings_rate >= savings_goal:
-                print(f"GOAL MET! You're saving {currency}{difference:,.2f} more than your goal!")
+                print(f"✓ GOAL MET! You're saving {currency}{difference:,.2f} more than your goal!")
             else:
-                print(f"Below target by {currency}{abs(difference):,.2f}")
+                print(f"✗ Below target by {currency}{abs(difference):,.2f}")
                 percentage_to_goal = (month_savings_rate / savings_goal * 100) if savings_goal > 0 else 0
                 print(f"   You're at {percentage_to_goal:.1f}% of your savings goal")
         else:
@@ -86,7 +104,9 @@ class Dashboard:
         print("-" * 60)
         print(f"Total Income:    {currency}{total_income:>15,.2f}")
         print(f"Total Expenses:  {currency}{total_expenses:>15,.2f}")
-        print(f"Net:             {currency}{total_net:>15,.2f}")
+        print(f"Total Invested:  {currency}{total_investments:>15,.2f}")
+        print(f"Total Saved:     {currency}{total_saved:>15,.2f}")
+        print(f"Cash Remaining:  {currency}{total_net_cash:>15,.2f}")
         
         # Investment Summary
         if all_investments:
@@ -182,11 +202,12 @@ class Dashboard:
         # Quick Actions
         print("\nQuick Tips:")
         if month_income > 0 and month_savings_rate < savings_goal:
-            shortfall = month_income * (savings_goal / 100) - month_net
-            print(f"   • To meet your savings goal, reduce expenses by {currency}{shortfall:,.2f}")
+            shortfall = month_income * (savings_goal / 100) - month_total_saved
+            print(f"   • To meet your savings goal, save an additional {currency}{shortfall:,.2f}")
+            print(f"     (reduce expenses or increase income/investments)")
         
         if month_income > 0 and month_savings_rate > savings_goal:
-            print(f"   • Great job! Consider investing your extra savings.")
+            print(f"   • Great job! You're exceeding your savings goal by {month_savings_rate - savings_goal:.1f}%")
         
         if not all_investments:
             print(f"   • Start building your investment portfolio for long-term growth")

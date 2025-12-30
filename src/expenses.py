@@ -141,16 +141,24 @@ class ExpenseManager:
         sorted_expenses = sorted(expense_entries, key=lambda x: x['date'], reverse=True)
         
         total = 0
+        total_investments = 0
         for i, entry in enumerate(sorted_expenses, 1):
             print(f"\n[{i}] {currency}{entry['amount']:,.2f}")
             print(f"    Category: {entry['category']}")
             print(f"    Date: {entry['date']}")
             if entry.get('description'):
                 print(f"    Description: {entry['description']}")
-            total += entry['amount']
+            
+            if entry['category'].lower() == 'investment':
+                total_investments += entry['amount']
+            else:
+                total += entry['amount']
         
         print("\n" + "-"*60)
         print(f"TOTAL EXPENSES: {currency}{total:,.2f}")
+        if total_investments > 0:
+            print(f"TOTAL INVESTMENTS: {currency}{total_investments:,.2f}")
+            print(f"COMBINED TOTAL: {currency}{total + total_investments:,.2f}")
         print("-"*60)
     
     def view_by_category(self):
@@ -171,7 +179,15 @@ class ExpenseManager:
                 by_category[category] = []
             by_category[category].append(entry)
         
-        total_expenses = sum(entry['amount'] for entry in expense_entries)
+        # Separate regular expenses from investments
+        total_expenses = sum(
+            entry['amount'] for entry in expense_entries
+            if entry['category'].lower() != 'investment'
+        )
+        total_investments = sum(
+            entry['amount'] for entry in expense_entries
+            if entry['category'].lower() == 'investment'
+        )
         
         print("\n" + "="*60)
         print("EXPENSES BY CATEGORY".center(60))
@@ -180,14 +196,26 @@ class ExpenseManager:
         for category in sorted(by_category.keys()):
             entries = by_category[category]
             category_total = sum(entry['amount'] for entry in entries)
-            percentage = (category_total / total_expenses) * 100
             
-            print(f"\n{category}")
+            # Calculate percentage based on appropriate total
+            if category.lower() == 'investment':
+                base_total = total_investments + total_expenses
+                label = "(Savings/Investment)"
+            else:
+                base_total = total_expenses
+                label = ""
+            
+            percentage = (category_total / base_total) * 100 if base_total > 0 else 0
+            
+            print(f"\n{category} {label}")
             print(f"   Total: {currency}{category_total:,.2f} ({percentage:.1f}%)")
             print(f"   Entries: {len(entries)}")
         
         print("\n" + "-"*60)
-        print(f"TOTAL EXPENSES: {currency}{total_expenses:,.2f}")
+        print(f"CONSUMPTION EXPENSES: {currency}{total_expenses:,.2f}")
+        if total_investments > 0:
+            print(f"INVESTMENTS (SAVINGS): {currency}{total_investments:,.2f}")
+        print(f"TOTAL OUTFLOWS: {currency}{total_expenses + total_investments:,.2f}")
         print("-"*60)
     
     def view_recurring_expenses(self):
@@ -393,11 +421,26 @@ class ExpenseManager:
             all_expenses = self.data_manager.get_all_expenses()
             
             total_income = sum(entry['amount'] for entry in all_income)
-            total_expenses = sum(entry['amount'] for entry in all_expenses)
-            current_balance = total_income - total_expenses
+            # Separate regular expenses from investments
+            total_expenses = sum(
+                entry['amount'] for entry in all_expenses
+                if entry['category'].lower() != 'investment'
+            )
+            total_investments = sum(
+                entry['amount'] for entry in all_expenses
+                if entry['category'].lower() == 'investment'
+            )
+            current_balance = total_income - total_expenses - total_investments
             
-            # Calculate after simulation
-            balance_after = current_balance - amount
+            # Calculate after simulation (only affects balance if it's a regular expense)
+            if category.lower() == 'investment':
+                balance_after = current_balance - amount  # Investment reduces cash
+                new_total_investments = total_investments + amount
+                new_total_expenses = total_expenses
+            else:
+                balance_after = current_balance - amount
+                new_total_investments = total_investments
+                new_total_expenses = total_expenses + amount
             
             # Display simulation results
             print("\n" + "="*60)
@@ -412,10 +455,18 @@ class ExpenseManager:
             print(f"\nCurrent Financial Status:")
             print(f"   Total Income: {currency}{total_income:,.2f}")
             print(f"   Total Expenses: {currency}{total_expenses:,.2f}")
+            if total_investments > 0:
+                print(f"   Total Invested: {currency}{total_investments:,.2f}")
             print(f"   Current Balance: {currency}{current_balance:,.2f}")
             
-            print(f"\nAfter This Expense:")
-            print(f"   New Total Expenses: {currency}{total_expenses + amount:,.2f}")
+            print(f"\nAfter This {'Investment' if category.lower() == 'investment' else 'Expense'}:")
+            if category.lower() == 'investment':
+                print(f"   Total Expenses: {currency}{total_expenses:,.2f} (unchanged)")
+                print(f"   New Total Invested: {currency}{new_total_investments:,.2f}")
+            else:
+                print(f"   New Total Expenses: {currency}{new_total_expenses:,.2f}")
+                if total_investments > 0:
+                    print(f"   Total Invested: {currency}{total_investments:,.2f} (unchanged)")
             print(f"   New Balance: {currency}{balance_after:,.2f}")
             
             # Calculate percentage impact
@@ -437,10 +488,20 @@ class ExpenseManager:
             print(f"   Current Total: {currency}{category_total:,.2f}")
             print(f"   After This Expense: {currency}{new_category_total:,.2f}")
             
-            if total_expenses > 0:
-                current_category_pct = (category_total / total_expenses) * 100
-                new_category_pct = (new_category_total / (total_expenses + amount)) * 100
-                print(f"   Category % of Total Expenses: {current_category_pct:.1f}% → {new_category_pct:.1f}%")
+            # Calculate percentage of appropriate total
+            if category.lower() == 'investment':
+                total_for_pct = total_investments
+                new_total_for_pct = new_total_investments
+                label = "Total Investments"
+            else:
+                total_for_pct = total_expenses
+                new_total_for_pct = new_total_expenses
+                label = "Total Expenses"
+            
+            if total_for_pct > 0 or new_total_for_pct > 0:
+                current_category_pct = (category_total / total_for_pct * 100) if total_for_pct > 0 else 0
+                new_category_pct = (new_category_total / new_total_for_pct * 100) if new_total_for_pct > 0 else 0
+                print(f"   Category % of {label}: {current_category_pct:.1f}% → {new_category_pct:.1f}%")
             
             print("\n" + "-"*60)
             print("This is a SIMULATION only - no data has been saved.")
