@@ -270,8 +270,8 @@ class InvestmentManager:
         try:
             choice = int(input("\nSelect investment number to update: ").strip())
             if 1 <= choice <= len(investments):
-                index = choice - 1
-                inv = investments[index]
+                inv = investments[choice - 1]
+                investment_id = inv['_id']
                 
                 print(f"\nUpdating: {inv['name']}")
                 print(f"Current value: {currency}{inv.get('current_value', inv['amount']):,.2f}")
@@ -281,7 +281,11 @@ class InvestmentManager:
                     print("Value cannot be negative.")
                     return
                 
-                self.data_manager.update_investment_value(index, new_value)
+                success = self.data_manager.update_investment_value(investment_id, new_value)
+                
+                if not success:
+                    print("\nError: Failed to update investment value.")
+                    return
                 
                 gain_loss = new_value - inv['amount']
                 gain_loss_pct = (gain_loss / inv['amount']) * 100 if inv['amount'] > 0 else 0
@@ -296,3 +300,5 @@ class InvestmentManager:
                 print("Invalid selection.")
         except ValueError:
             print("Invalid input.")
+        except Exception as e:
+            print(f"\nError during update: {str(e)}")

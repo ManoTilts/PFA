@@ -356,11 +356,17 @@ class ExpenseManager:
             elif 1 <= choice_num <= len(investments):
                 # Existing investment
                 inv = investments[choice_num - 1]
+                investment_id = inv['_id']
                 investment_name = inv['name']
                 current_value = inv.get('current_value', inv['amount'])
                 new_value = current_value + amount
                 
-                self.data_manager.update_investment_value(choice_num - 1, new_value)
+                success = self.data_manager.update_investment_value(investment_id, new_value)
+                
+                if not success:
+                    print("\nError: Failed to update investment value.")
+                    return
+                
                 print(f"\nInvestment '{investment_name}' updated!")
                 currency = self.data_manager.get_currency()
                 print(f"   Previous value: {currency}{current_value:,.2f}")

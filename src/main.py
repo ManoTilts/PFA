@@ -33,7 +33,8 @@ class PersonalFinanceApp:
         print("[4] Debt & Overexpense Management")
         print("[5] Savings Goals")
         print("[6] Financial Dashboard")
-        print("[7] Settings & Goals")
+        print("[7] Previous Months Overview")
+        print("[8] Settings & Goals")
         print("[0] Exit")
         print("\n" + "-"*60)
     
@@ -242,6 +243,8 @@ class PersonalFinanceApp:
             elif choice == "6":
                 self.dashboard.show_dashboard()
             elif choice == "7":
+                self.dashboard.show_previous_months()
+            elif choice == "8":
                 self.settings_menu()
             elif choice == "0":
                 print("\nThank you for using Personal Finance Assistant!")

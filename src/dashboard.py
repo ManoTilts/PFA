@@ -216,3 +216,363 @@ class Dashboard:
             print(f"   • Consider allocating some investments to an emergency fund")
         
         print("="*60)
+    
+    def show_previous_months(self):
+        """Display overview of previous months"""
+        from datetime import datetime
+        
+        print("\n" + "="*60)
+        print("PREVIOUS MONTHS OVERVIEW".center(60))
+        print("="*60)
+        
+        # Get data
+        all_income = self.data_manager.get_all_income()
+        all_expenses = self.data_manager.get_all_expenses()
+        currency = self.data_manager.get_currency()
+        savings_goal = self.data_manager.get_savings_goal()
+        
+        # Get unique months from the data
+        months = set()
+        for entry in all_income:
+            months.add(entry['date'][:7])  # YYYY-MM format
+        for entry in all_expenses:
+            months.add(entry['date'][:7])
+        
+        if not months:
+            print("\nNo data available yet.")
+            return
+        
+        # Sort months in descending order (most recent first)
+        sorted_months = sorted(months, reverse=True)
+        
+        # Current month
+        current_month = datetime.now().strftime("%Y-%m")
+        
+        # Remove current month from list
+        previous_months = [m for m in sorted_months if m != current_month]
+        
+        if not previous_months:
+            print("\nNo previous month data available yet.")
+            print("Current month data can be viewed in the main dashboard.")
+            return
+        
+        # Display menu to select a month
+        print("\nSelect a month to view:")
+        print("-" * 60)
+        for i, month in enumerate(previous_months, 1):
+            month_obj = datetime.strptime(month, "%Y-%m")
+            month_name = month_obj.strftime("%B %Y")
+            print(f"[{i}] {month_name}")
+        print("[0] Back to Main Menu")
+        print("-" * 60)
+        
+        try:
+            choice = input("\nSelect a month: ").strip()
+            if choice == "0":
+                return
+            
+            choice_idx = int(choice) - 1
+            if 0 <= choice_idx < len(previous_months):
+                selected_month = previous_months[choice_idx]
+                self._show_month_detail(selected_month)
+            else:
+                print("Invalid selection.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    def _show_month_detail(self, month):
+        """Display detailed overview for a specific month"""
+        from datetime import datetime
+        
+        month_obj = datetime.strptime(month, "%Y-%m")
+        month_name = month_obj.strftime("%B %Y")
+        
+        currency = self.data_manager.get_currency()
+        savings_goal = self.data_manager.get_savings_goal()
+        
+        # Get all data
+        all_income = self.data_manager.get_all_income()
+        all_expenses = self.data_manager.get_all_expenses()
+        
+        # Filter data for the selected month
+        month_income = sum(
+            entry['amount'] for entry in all_income
+            if entry['date'].startswith(month)
+        )
+        month_expenses = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['date'].startswith(month) and entry['category'].lower() != 'investment'
+        )
+        month_investments = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['date'].startswith(month) and entry['category'].lower() == 'investment'
+        )
+        
+        # Calculations
+        month_net_cash = month_income - month_expenses - month_investments
+        month_total_saved = month_net_cash + month_investments
+        month_savings_rate = (month_total_saved / month_income * 100) if month_income > 0 else 0
+        
+        # Display Month Summary
+        print("\n" + "="*60)
+        print(month_name.center(60))
+        print("="*60)
+        print(f"Income:              {currency}{month_income:>15,.2f}")
+        print(f"Expenses:            {currency}{month_expenses:>15,.2f}")
+        print("-" * 60)
+        print(f"Total Saved:         {currency}{month_total_saved:>15,.2f}")
+        print(f"  • Invested:        {currency}{month_investments:>15,.2f}")
+        print(f"  • Cash Remaining:  {currency}{month_net_cash:>15,.2f}")
+        print(f"Savings Rate:        {month_savings_rate:>15.1f}%")
+        
+        # Savings Goal Check
+        print("\n" + "-" * 60)
+        print("SAVINGS GOAL CHECK".center(60))
+        print("-" * 60)
+        print(f"Target Savings Rate: {savings_goal}%")
+        print(f"Actual Savings Rate: {month_savings_rate:.1f}%")
+        
+        if month_income > 0:
+            target_savings = month_income * (savings_goal / 100)
+            actual_savings = month_total_saved
+            difference = actual_savings - target_savings
+            
+            print(f"Target Savings: {currency}{target_savings:,.2f}")
+            print(f"Actual Savings: {currency}{actual_savings:,.2f}")
+            
+            if month_savings_rate >= savings_goal:
+                print(f"✓ GOAL MET! Saved {currency}{difference:,.2f} more than target!")
+            else:
+                print(f"✗ Below target by {currency}{abs(difference):,.2f}")
+                percentage_to_goal = (month_savings_rate / savings_goal * 100) if savings_goal > 0 else 0
+                print(f"   Achieved {percentage_to_goal:.1f}% of savings goal")
+        else:
+            print("No income recorded for this month")
+        
+        # Expense Breakdown
+        month_expenses_list = [
+            entry for entry in all_expenses
+            if entry['date'].startswith(month)
+        ]
+        
+        if month_expenses_list:
+            print("\n" + "-" * 60)
+            print(f"EXPENSE BREAKDOWN".center(60))
+            print("-" * 60)
+            
+            # Group by category
+            by_category = {}
+            for entry in month_expenses_list:
+                category = entry['category']
+                if category not in by_category:
+                    by_category[category] = 0
+                by_category[category] += entry['amount']
+            
+            # Sort by amount
+            total_expenses = sum(by_category.values())
+            sorted_categories = sorted(by_category.items(), key=lambda x: x[1], reverse=True)
+            
+            for category, amount in sorted_categories:
+                percentage = (amount / total_expenses * 100) if total_expenses > 0 else 0
+                print(f"{category:.<30} {currency}{amount:>10,.2f} ({percentage:>5.1f}%)")
+        
+        # Financial Health
+        print("\n" + "-" * 60)
+        print("FINANCIAL HEALTH".center(60))
+        print("-" * 60)
+        
+        if month_income > 0:
+            expense_to_income_ratio = (month_expenses / month_income) * 100
+            print(f"Expense-to-Income Ratio: {expense_to_income_ratio:.1f}%")
+            
+            if expense_to_income_ratio < 50:
+                print("Excellent! Spending less than half of income.")
+            elif expense_to_income_ratio < 70:
+                print("Good! Maintaining healthy spending habits.")
+            elif expense_to_income_ratio < 90:
+                print("Caution: Spending most of income.")
+            else:
+                print("Alert: Spending at or above income!")
+        
+        print("\n" + "="*60)
+        input("\nPress Enter to continue...")
+    
+    def show_previous_months(self):
+        """Display overview of previous months"""
+        from datetime import datetime
+        
+        print("\n" + "="*60)
+        print("PREVIOUS MONTHS OVERVIEW".center(60))
+        print("="*60)
+        
+        # Get data
+        all_income = self.data_manager.get_all_income()
+        all_expenses = self.data_manager.get_all_expenses()
+        currency = self.data_manager.get_currency()
+        savings_goal = self.data_manager.get_savings_goal()
+        
+        # Get unique months from the data
+        months = set()
+        for entry in all_income:
+            months.add(entry['date'][:7])  # YYYY-MM format
+        for entry in all_expenses:
+            months.add(entry['date'][:7])
+        
+        if not months:
+            print("\nNo data available yet.")
+            return
+        
+        # Sort months in descending order (most recent first)
+        sorted_months = sorted(months, reverse=True)
+        
+        # Current month
+        current_month = datetime.now().strftime("%Y-%m")
+        
+        # Remove current month from list
+        previous_months = [m for m in sorted_months if m != current_month]
+        
+        if not previous_months:
+            print("\nNo previous month data available yet.")
+            print("Current month data can be viewed in the main dashboard.")
+            return
+        
+        # Display menu to select a month
+        print("\nSelect a month to view:")
+        print("-" * 60)
+        for i, month in enumerate(previous_months, 1):
+            month_obj = datetime.strptime(month, "%Y-%m")
+            month_name = month_obj.strftime("%B %Y")
+            print(f"[{i}] {month_name}")
+        print("[0] Back to Main Menu")
+        print("-" * 60)
+        
+        try:
+            choice = input("\nSelect a month: ").strip()
+            if choice == "0":
+                return
+            
+            choice_idx = int(choice) - 1
+            if 0 <= choice_idx < len(previous_months):
+                selected_month = previous_months[choice_idx]
+                self._show_month_detail(selected_month)
+            else:
+                print("Invalid selection.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    def _show_month_detail(self, month):
+        """Display detailed overview for a specific month"""
+        from datetime import datetime
+        
+        month_obj = datetime.strptime(month, "%Y-%m")
+        month_name = month_obj.strftime("%B %Y")
+        
+        currency = self.data_manager.get_currency()
+        savings_goal = self.data_manager.get_savings_goal()
+        
+        # Get all data
+        all_income = self.data_manager.get_all_income()
+        all_expenses = self.data_manager.get_all_expenses()
+        
+        # Filter data for the selected month
+        month_income = sum(
+            entry['amount'] for entry in all_income
+            if entry['date'].startswith(month)
+        )
+        month_expenses = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['date'].startswith(month) and entry['category'].lower() != 'investment'
+        )
+        month_investments = sum(
+            entry['amount'] for entry in all_expenses
+            if entry['date'].startswith(month) and entry['category'].lower() == 'investment'
+        )
+        
+        # Calculations
+        month_net_cash = month_income - month_expenses - month_investments
+        month_total_saved = month_net_cash + month_investments
+        month_savings_rate = (month_total_saved / month_income * 100) if month_income > 0 else 0
+        
+        # Display Month Summary
+        print("\n" + "="*60)
+        print(month_name.center(60))
+        print("="*60)
+        print(f"Income:              {currency}{month_income:>15,.2f}")
+        print(f"Expenses:            {currency}{month_expenses:>15,.2f}")
+        print("-" * 60)
+        print(f"Total Saved:         {currency}{month_total_saved:>15,.2f}")
+        print(f"  • Invested:        {currency}{month_investments:>15,.2f}")
+        print(f"  • Cash Remaining:  {currency}{month_net_cash:>15,.2f}")
+        print(f"Savings Rate:        {month_savings_rate:>15.1f}%")
+        
+        # Savings Goal Check
+        print("\n" + "-" * 60)
+        print("SAVINGS GOAL CHECK".center(60))
+        print("-" * 60)
+        print(f"Target Savings Rate: {savings_goal}%")
+        print(f"Actual Savings Rate: {month_savings_rate:.1f}%")
+        
+        if month_income > 0:
+            target_savings = month_income * (savings_goal / 100)
+            actual_savings = month_total_saved
+            difference = actual_savings - target_savings
+            
+            print(f"Target Savings: {currency}{target_savings:,.2f}")
+            print(f"Actual Savings: {currency}{actual_savings:,.2f}")
+            
+            if month_savings_rate >= savings_goal:
+                print(f"✓ GOAL MET! Saved {currency}{difference:,.2f} more than target!")
+            else:
+                print(f"✗ Below target by {currency}{abs(difference):,.2f}")
+                percentage_to_goal = (month_savings_rate / savings_goal * 100) if savings_goal > 0 else 0
+                print(f"   Achieved {percentage_to_goal:.1f}% of savings goal")
+        else:
+            print("No income recorded for this month")
+        
+        # Expense Breakdown
+        month_expenses_list = [
+            entry for entry in all_expenses
+            if entry['date'].startswith(month)
+        ]
+        
+        if month_expenses_list:
+            print("\n" + "-" * 60)
+            print(f"EXPENSE BREAKDOWN".center(60))
+            print("-" * 60)
+            
+            # Group by category
+            by_category = {}
+            for entry in month_expenses_list:
+                category = entry['category']
+                if category not in by_category:
+                    by_category[category] = 0
+                by_category[category] += entry['amount']
+            
+            # Sort by amount
+            total_expenses = sum(by_category.values())
+            sorted_categories = sorted(by_category.items(), key=lambda x: x[1], reverse=True)
+            
+            for category, amount in sorted_categories:
+                percentage = (amount / total_expenses * 100) if total_expenses > 0 else 0
+                print(f"{category:.<30} {currency}{amount:>10,.2f} ({percentage:>5.1f}%)")
+        
+        # Financial Health
+        print("\n" + "-" * 60)
+        print("FINANCIAL HEALTH".center(60))
+        print("-" * 60)
+        
+        if month_income > 0:
+            expense_to_income_ratio = (month_expenses / month_income) * 100
+            print(f"Expense-to-Income Ratio: {expense_to_income_ratio:.1f}%")
+            
+            if expense_to_income_ratio < 50:
+                print("Excellent! Spending less than half of income.")
+            elif expense_to_income_ratio < 70:
+                print("Good! Maintaining healthy spending habits.")
+            elif expense_to_income_ratio < 90:
+                print("Caution: Spending most of income.")
+            else:
+                print("Alert: Spending at or above income!")
+        
+        print("\n" + "="*60)
+        input("\nPress Enter to continue...")

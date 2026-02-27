@@ -150,6 +150,7 @@ class IncomeManager:
                 return
             
             inv = investments[choice - 1]
+            investment_id = inv['_id']
             investment_name = inv['name']
             current_value = inv.get('current_value', inv['amount'])
             
@@ -169,7 +170,11 @@ class IncomeManager:
             
             # Update investment value
             new_value = current_value - amount
-            self.data_manager.update_investment_value(choice - 1, new_value)
+            success = self.data_manager.update_investment_value(investment_id, new_value)
+            
+            if not success:
+                print("\nError: Failed to update investment value.")
+                return
             
             # Create income entry
             date = datetime.now().strftime("%Y-%m-%d")
@@ -184,3 +189,5 @@ class IncomeManager:
             
         except ValueError:
             print("Invalid input. Please enter valid numbers.")
+        except Exception as e:
+            print(f"\nError during withdrawal: {str(e)}")

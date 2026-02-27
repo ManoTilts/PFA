@@ -138,24 +138,21 @@ class DataManager:
     
     def get_all_investments(self):
         """Get all investment entries"""
-        return list(self.investments_collection.find({}, {'_id': 0}))
+        return list(self.investments_collection.find({}))
     
     def get_investments_by_purpose(self, purpose):
         """Get investments by purpose"""
         return list(self.investments_collection.find({
             "purpose": {"$regex": f"^{purpose}$", "$options": "i"}
-        }, {'_id': 0}))
+        }))
     
-    def update_investment_value(self, index, new_value):
-        """Update the current value of an investment"""
-        investments = list(self.investments_collection.find({}))
-        if 0 <= index < len(investments):
-            self.investments_collection.update_one(
-                {'_id': investments[index]['_id']},
-                {'$set': {'current_value': new_value}}
-            )
-            return True
-        return False
+    def update_investment_value(self, investment_id, new_value):
+        """Update the current value of an investment by ID"""
+        result = self.investments_collection.update_one(
+            {'_id': investment_id},
+            {'$set': {'current_value': new_value}}
+        )
+        return result.modified_count > 0
     
     # Settings methods
     def set_savings_goal(self, percentage):
